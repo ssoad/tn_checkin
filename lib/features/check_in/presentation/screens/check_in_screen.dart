@@ -52,13 +52,6 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                         checkInPoint.title,
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        checkInPoint.description,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                      ),
                       const SizedBox(height: 12),
                       Row(
                         children: [

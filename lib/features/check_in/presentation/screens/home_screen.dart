@@ -145,13 +145,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               checkInPoint.title,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
-            const SizedBox(height: 4),
-            Text(
-              checkInPoint.description,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-            ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,

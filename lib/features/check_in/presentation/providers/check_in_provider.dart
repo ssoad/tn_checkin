@@ -112,7 +112,7 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
 
   Future<void> createCheckInPoint({
     required String title,
-    required String description,
+    String? description,
     required String createdBy,
     required double radiusInMeters,
   }) async {
@@ -124,7 +124,43 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
 
       final params = CreateCheckInPointParams(
         title: title,
-        description: description,
+        description: description ?? '',
+        location: location,
+        radiusInMeters: radiusInMeters,
+        createdBy: createdBy,
+      );
+
+      final result = await _createCheckInPoint(params);
+
+      result.fold(
+        (failure) => state = state.copyWith(
+          isLoading: false,
+          error: _getFailureMessage(failure),
+        ),
+        (checkInPoint) => state = state.copyWith(
+          isLoading: false,
+          error: null,
+          activeCheckInPoint: checkInPoint,
+        ),
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> createCheckInPointWithLocation({
+    required String title,
+    String? description,
+    required String createdBy,
+    required double radiusInMeters,
+    required GeoLocation location,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final params = CreateCheckInPointParams(
+        title: title,
+        description: description ?? '',
         location: location,
         radiusInMeters: radiusInMeters,
         createdBy: createdBy,
