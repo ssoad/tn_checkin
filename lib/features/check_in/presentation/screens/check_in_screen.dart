@@ -24,182 +24,490 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   @override
   Widget build(BuildContext context) {
     final checkInState = ref.watch(checkInProvider);
-    final checkInPoint = checkInState.activeCheckInPoint;
+    final activeCheckInPointAsync = ref.watch(activeCheckInPointStreamProvider);
+    final theme = Theme.of(context);
 
-    if (checkInPoint == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Check In'), elevation: 0),
-        body: const Center(child: Text('No active check-in point found')),
-      );
-    }
+    return activeCheckInPointAsync.when(
+      data: (checkInPoint) {
+        if (checkInPoint == null) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(
+                'Check In',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              centerTitle: true,
+              elevation: 0,
+              backgroundColor: theme.colorScheme.surface,
+              foregroundColor: theme.colorScheme.onSurface,
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.location_off_rounded,
+                    size: 64,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No active check-in point found',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Check In'), elevation: 0),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              'Check In',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            centerTitle: true,
+            elevation: 0,
+            backgroundColor: theme.colorScheme.surface,
+            foregroundColor: theme.colorScheme.onSurface,
+          ),
+          body: _buildCheckInBody(context, checkInPoint, checkInState, theme),
+        );
+      },
+      loading: () => Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Check In',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: theme.colorScheme.surface,
+          foregroundColor: theme.colorScheme.onSurface,
+        ),
+        body: Center(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Check-in point info
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              CircularProgressIndicator(
+                strokeWidth: 3,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Loading check-in point...',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      error: (error, stackTrace) => Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Check In',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: theme.colorScheme.surface,
+          foregroundColor: theme.colorScheme.onSurface,
+        ),
+        body: Center(
+          child: Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.errorContainer.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.error.withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  color: theme.colorScheme.error,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Error loading check-in point: ${error.toString()}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCheckInBody(
+    BuildContext context,
+    dynamic checkInPoint,
+    CheckInState checkInState,
+    ThemeData theme,
+  ) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Check-in point info with real-time count
+            Container(
+              padding: const EdgeInsets.all(20.0),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primaryContainer,
+                    theme.colorScheme.primaryContainer.withOpacity(0.7),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        checkInPoint.title,
-                        style: Theme.of(context).textTheme.headlineSmall,
+                      Expanded(
+                        child: Text(
+                          checkInPoint.title,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.radio_button_checked,
-                            color: Colors.blue.shade600,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Radius: ${checkInPoint.radiusInMeters.toInt()}m',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.people_rounded,
+                              color: theme.colorScheme.primary,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${checkInPoint.checkedInCount}',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.radio_button_checked_rounded,
+                          color: theme.colorScheme.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Check-in radius: ${checkInPoint.radiusInMeters.toInt()} meters',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Real-time checked-in users count
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withOpacity(
+                  0.5,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withOpacity(0.2),
                 ),
               ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.groups_rounded,
+                    color: theme.colorScheme.primary,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    '${checkInPoint.checkedInCount} ${checkInPoint.checkedInCount == 1 ? 'person' : 'people'} checked in',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-              const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-              // Location status
-              Card(
+            // Location status
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
                 color: checkInState.isWithinRange
                     ? Colors.green.shade50
                     : Colors.orange.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      Icon(
-                        checkInState.isWithinRange
-                            ? Icons.check_circle_outline
-                            : Icons.location_searching,
-                        size: 48,
-                        color: checkInState.isWithinRange
-                            ? Colors.green.shade600
-                            : Colors.orange.shade600,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: checkInState.isWithinRange
+                      ? Colors.green.shade200
+                      : Colors.orange.shade200,
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        (checkInState.isWithinRange
+                                ? Colors.green
+                                : Colors.orange)
+                            .withOpacity(0.1),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color:
+                          (checkInState.isWithinRange
+                                  ? Colors.green
+                                  : Colors.orange)
+                              .withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      checkInState.isWithinRange
+                          ? Icons.check_circle_rounded
+                          : Icons.location_searching_rounded,
+                      size: 48,
+                      color: checkInState.isWithinRange
+                          ? Colors.green.shade600
+                          : Colors.orange.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    checkInState.isWithinRange
+                        ? 'You\'re in range!'
+                        : 'Move closer to check in',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: checkInState.isWithinRange
+                          ? Colors.green.shade700
+                          : Colors.orange.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    checkInState.isWithinRange
+                        ? 'You can now check in to this location'
+                        : 'You need to be within ${checkInPoint.radiusInMeters.toInt()}m to check in',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: checkInState.isWithinRange
+                          ? Colors.green.shade600
+                          : Colors.orange.shade600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Refresh location button
+            OutlinedButton.icon(
+              onPressed: checkInState.isLoading
+                  ? null
+                  : () =>
+                        ref.read(checkInProvider.notifier).updateUserLocation(),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: Icon(
+                Icons.refresh_rounded,
+                size: 20,
+                color: theme.colorScheme.primary,
+              ),
+              label: Text(
+                'Refresh Location',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Check-in button
+            FilledButton(
+              onPressed:
+                  (checkInState.isLoading ||
+                      !checkInState.isWithinRange ||
+                      checkInState.userCheckIn != null)
+                  ? null
+                  : _checkIn,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: checkInState.userCheckIn != null
+                    ? Colors.green.shade600
+                    : null,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: checkInState.isLoading
+                  ? SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: theme.colorScheme.onPrimary,
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        checkInState.isWithinRange
-                            ? 'You are within check-in range!'
-                            : 'Move closer to the check-in point',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: checkInState.isWithinRange
-                                  ? Colors.green.shade700
-                                  : Colors.orange.shade700,
-                            ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        checkInState.isWithinRange
-                            ? 'Tap the button below to check in'
-                            : 'You need to be within ${checkInPoint.radiusInMeters.toInt()}m to check in',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: checkInState.isWithinRange
-                              ? Colors.green.shade600
-                              : Colors.orange.shade600,
+                    )
+                  : checkInState.userCheckIn != null
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          color: Colors.white,
+                          size: 20,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Text(
+                          'Successfully Checked In',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.location_on_rounded, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Check In Now',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Error message
+            if (checkInState.error != null)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.errorContainer.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: theme.colorScheme.error.withOpacity(0.3),
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Refresh location button
-              OutlinedButton.icon(
-                onPressed: checkInState.isLoading
-                    ? null
-                    : () => ref
-                          .read(checkInProvider.notifier)
-                          .updateUserLocation(),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Refresh Location'),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Check-in button
-              SizedBox(
-                height: 56,
-                child: ElevatedButton(
-                  onPressed:
-                      (checkInState.isLoading ||
-                          !checkInState.isWithinRange ||
-                          checkInState.userCheckIn != null)
-                      ? null
-                      : _checkIn,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: checkInState.userCheckIn != null
-                        ? Colors.green
-                        : null,
-                  ),
-                  child: checkInState.isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : checkInState.userCheckIn != null
-                      ? const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.check, color: Colors.white),
-                            SizedBox(width: 8),
-                            Text(
-                              'Checked In',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ],
-                        )
-                      : const Text('Check In'),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Error message
-              if (checkInState.error != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error_outline, color: Colors.red.shade600),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          checkInState.error!,
-                          style: TextStyle(color: Colors.red.shade600),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline_rounded,
+                      color: theme.colorScheme.error,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        checkInState.error!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onErrorContainer,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
@@ -221,9 +529,53 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
 
     if (mounted && ref.read(checkInProvider).userCheckIn != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Successfully checked in!'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Successfully checked in!',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Text(
+                      'Your attendance has been recorded',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green.shade600,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
         ),
       );
     }
