@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:equatable/equatable.dart';
 
-import '../../../../core/providers/providers.dart';
 import '../../../../core/usecases/usecase.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/usecases/get_current_user.dart';
 import '../../domain/usecases/sign_out.dart';
+import '../../domain/usecases/sign_in_with_email_and_password.dart';
 
 class AuthState extends Equatable {
   final bool isLoading;
@@ -42,19 +42,22 @@ class AuthState extends Equatable {
 class AuthNotifier extends StateNotifier<AuthState> {
   final GetCurrentUser _getCurrentUser;
   final SignOut _signOut;
+  final SignInWithEmailAndPassword _signInWithEmailAndPassword;
 
   AuthNotifier({
     required GetCurrentUser getCurrentUser,
     required SignOut signOut,
-  })  : _getCurrentUser = getCurrentUser,
-        _signOut = signOut,
-        super(const AuthState());
+    required SignInWithEmailAndPassword signInWithEmailAndPassword,
+  }) : _getCurrentUser = getCurrentUser,
+       _signOut = signOut,
+       _signInWithEmailAndPassword = signInWithEmailAndPassword,
+       super(const AuthState());
 
   Future<void> checkAuthStatus() async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     final result = await _getCurrentUser(const NoParams());
-    
+
     result.fold(
       (failure) => state = state.copyWith(
         isLoading: false,
@@ -73,9 +76,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> signOut() async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     final result = await _signOut(const NoParams());
-    
+
     result.fold(
       (failure) => state = state.copyWith(
         isLoading: false,
@@ -86,6 +89,29 @@ class AuthNotifier extends StateNotifier<AuthState> {
         error: null,
         isAuthenticated: false,
         user: null,
+      ),
+    );
+  }
+
+  Future<void> signInWithEmailAndPassword(String email, String password) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    final result = await _signInWithEmailAndPassword(
+      SignInParams(email: email, password: password),
+    );
+
+    result.fold(
+      (failure) => state = state.copyWith(
+        isLoading: false,
+        error: _getFailureMessage(failure),
+        isAuthenticated: false,
+        user: null,
+      ),
+      (user) => state = state.copyWith(
+        isLoading: false,
+        error: null,
+        isAuthenticated: true,
+        user: user,
       ),
     );
   }
@@ -101,8 +127,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(
-    getCurrentUser: ref.read(getCurrentUserProvider),
-    signOut: ref.read(signOutProvider),
-  );
+  // These will be injected from the core providers
+  throw UnimplementedError('Auth provider should be overridden in main.dart');
 });

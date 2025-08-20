@@ -28,21 +28,13 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
 
     if (checkInPoint == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Check In'),
-          elevation: 0,
-        ),
-        body: const Center(
-          child: Text('No active check-in point found'),
-        ),
+        appBar: AppBar(title: const Text('Check In'), elevation: 0),
+        body: const Center(child: Text('No active check-in point found')),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Check In'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Check In'), elevation: 0),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -64,14 +56,17 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                       Text(
                         checkInPoint.description,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey[600],
-                            ),
+                          color: Colors.grey[600],
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Icon(Icons.radio_button_checked, 
-                               color: Colors.blue.shade600, size: 20),
+                          Icon(
+                            Icons.radio_button_checked,
+                            color: Colors.blue.shade600,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'Radius: ${checkInPoint.radiusInMeters.toInt()}m',
@@ -88,44 +83,45 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
 
               // Location status
               Card(
-                color: checkInState.isWithinRange 
-                    ? Colors.green.shade50 
+                color: checkInState.isWithinRange
+                    ? Colors.green.shade50
                     : Colors.orange.shade50,
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
                       Icon(
-                        checkInState.isWithinRange 
-                            ? Icons.check_circle_outline 
+                        checkInState.isWithinRange
+                            ? Icons.check_circle_outline
                             : Icons.location_searching,
                         size: 48,
-                        color: checkInState.isWithinRange 
-                            ? Colors.green.shade600 
+                        color: checkInState.isWithinRange
+                            ? Colors.green.shade600
                             : Colors.orange.shade600,
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        checkInState.isWithinRange 
+                        checkInState.isWithinRange
                             ? 'You are within check-in range!'
                             : 'Move closer to the check-in point',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: checkInState.isWithinRange 
-                                  ? Colors.green.shade700 
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: checkInState.isWithinRange
+                                  ? Colors.green.shade700
                                   : Colors.orange.shade700,
                             ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        checkInState.isWithinRange 
+                        checkInState.isWithinRange
                             ? 'Tap the button below to check in'
                             : 'You need to be within ${checkInPoint.radiusInMeters.toInt()}m to check in',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: checkInState.isWithinRange 
-                                  ? Colors.green.shade600 
-                                  : Colors.orange.shade600,
-                            ),
+                          color: checkInState.isWithinRange
+                              ? Colors.green.shade600
+                              : Colors.orange.shade600,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -137,9 +133,11 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
 
               // Refresh location button
               OutlinedButton.icon(
-                onPressed: checkInState.isLoading 
-                    ? null 
-                    : () => ref.read(checkInProvider.notifier).updateUserLocation(),
+                onPressed: checkInState.isLoading
+                    ? null
+                    : () => ref
+                          .read(checkInProvider.notifier)
+                          .updateUserLocation(),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Refresh Location'),
               ),
@@ -150,14 +148,15 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
               SizedBox(
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: (checkInState.isLoading || 
-                              !checkInState.isWithinRange ||
-                              checkInState.userCheckIn != null) 
-                      ? null 
+                  onPressed:
+                      (checkInState.isLoading ||
+                          !checkInState.isWithinRange ||
+                          checkInState.userCheckIn != null)
+                      ? null
                       : _checkIn,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: checkInState.userCheckIn != null 
-                        ? Colors.green 
+                    backgroundColor: checkInState.userCheckIn != null
+                        ? Colors.green
                         : null,
                   ),
                   child: checkInState.isLoading
@@ -167,16 +166,18 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : checkInState.userCheckIn != null
-                          ? const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.check, color: Colors.white),
-                                SizedBox(width: 8),
-                                Text('Checked In', 
-                                     style: TextStyle(color: Colors.white)),
-                              ],
-                            )
-                          : const Text('Check In'),
+                      ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.check, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text(
+                              'Checked In',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        )
+                      : const Text('Check In'),
                 ),
               ),
 

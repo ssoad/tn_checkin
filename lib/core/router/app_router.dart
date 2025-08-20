@@ -14,11 +14,7 @@ class AppRouter extends ConsumerWidget {
 
     // Show loading while checking auth status
     if (authState.isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     // Navigate based on auth status

@@ -60,8 +60,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       Text(
                         'User: ${authState.user?.userType.name ?? 'Guest'}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey[600],
-                            ),
+                          color: Colors.grey[600],
+                        ),
                       ),
                     ],
                   ),
@@ -111,7 +111,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildActiveCheckInPoint(BuildContext context, CheckInState state) {
     final checkInPoint = state.activeCheckInPoint!;
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -121,7 +121,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green.shade100,
                     borderRadius: BorderRadius.circular(12),
@@ -145,9 +148,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 4),
             Text(
               checkInPoint.description,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -175,11 +178,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Icon(
-              Icons.location_off,
-              size: 48,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.location_off, size: 48, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'No Active Check-in Point',
@@ -188,9 +187,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 8),
             Text(
               'Create a new check-in point to get started',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),

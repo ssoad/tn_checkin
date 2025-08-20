@@ -8,7 +8,7 @@ import '../models/check_in_point_model.dart';
 import '../models/check_in_model.dart';
 
 /// Firebase data source for check-in operations
-/// 
+///
 /// Simple and focused - just the operations we actually need.
 abstract class CheckInRemoteDataSource {
   Future<CheckInPointModel> createCheckInPoint({
@@ -26,7 +26,7 @@ abstract class CheckInRemoteDataSource {
     required String checkInPointId,
     required GeoLocation userLocation,
   });
-  
+
   Stream<CheckInPointModel?> get activeCheckInPointStream;
 }
 
@@ -37,8 +37,8 @@ class CheckInRemoteDataSourceImpl implements CheckInRemoteDataSource {
   CheckInRemoteDataSourceImpl({
     required FirebaseFirestore firestore,
     required Uuid uuid,
-  })  : _firestore = firestore,
-        _uuid = uuid;
+  }) : _firestore = firestore,
+       _uuid = uuid;
 
   @override
   Future<CheckInPointModel> createCheckInPoint({
@@ -77,7 +77,9 @@ class CheckInRemoteDataSourceImpl implements CheckInRemoteDataSource {
       return checkInPoint;
     } catch (e) {
       if (e is ServerException) rethrow;
-      throw ServerException(message: 'Failed to create check-in point: ${e.toString()}');
+      throw ServerException(
+        message: 'Failed to create check-in point: ${e.toString()}',
+      );
     }
   }
 
@@ -95,7 +97,9 @@ class CheckInRemoteDataSourceImpl implements CheckInRemoteDataSource {
       final doc = query.docs.first;
       return CheckInPointModel.fromFirestore(doc.data(), doc.id);
     } catch (e) {
-      throw ServerException(message: 'Failed to get active check-in point: ${e.toString()}');
+      throw ServerException(
+        message: 'Failed to get active check-in point: ${e.toString()}',
+      );
     }
   }
 
@@ -126,7 +130,9 @@ class CheckInRemoteDataSourceImpl implements CheckInRemoteDataSource {
 
       // Update check-in point with new user
       batch.update(
-        _firestore.collection(AppConstants.checkInPointsCollection).doc(checkInPointId),
+        _firestore
+            .collection(AppConstants.checkInPointsCollection)
+            .doc(checkInPointId),
         {
           'checkedInUserIds': FieldValue.arrayUnion([userId]),
         },
@@ -135,7 +141,9 @@ class CheckInRemoteDataSourceImpl implements CheckInRemoteDataSource {
       await batch.commit();
       return checkIn;
     } catch (e) {
-      throw ServerException(message: 'Failed to check in user: ${e.toString()}');
+      throw ServerException(
+        message: 'Failed to check in user: ${e.toString()}',
+      );
     }
   }
 
@@ -147,10 +155,10 @@ class CheckInRemoteDataSourceImpl implements CheckInRemoteDataSource {
         .limit(1)
         .snapshots()
         .map((snapshot) {
-      if (snapshot.docs.isEmpty) return null;
-      
-      final doc = snapshot.docs.first;
-      return CheckInPointModel.fromFirestore(doc.data(), doc.id);
-    });
+          if (snapshot.docs.isEmpty) return null;
+
+          final doc = snapshot.docs.first;
+          return CheckInPointModel.fromFirestore(doc.data(), doc.id);
+        });
   }
 }

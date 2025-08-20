@@ -5,7 +5,6 @@ import '../errors/exceptions.dart';
 import '../../features/check_in/domain/entities/check_in_point.dart';
 
 class LocationService {
-  
   /// Check if location permission is granted
   Future<bool> hasLocationPermission() async {
     final permission = await Permission.location.status;
@@ -23,7 +22,8 @@ class LocationService {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
         throw const LocationException(
-          message: 'Location services are disabled. Please enable them in settings.',
+          message:
+              'Location services are disabled. Please enable them in settings.',
         );
       }
 
@@ -31,7 +31,8 @@ class LocationService {
         final granted = await requestLocationPermission();
         if (!granted) {
           throw const LocationException(
-            message: 'Location permission denied. Please grant permission to use this feature.',
+            message:
+                'Location permission denied. Please grant permission to use this feature.',
           );
         }
       }
@@ -47,7 +48,9 @@ class LocationService {
       );
     } catch (e) {
       if (e is LocationException) rethrow;
-      throw LocationException(message: 'Failed to get location: ${e.toString()}');
+      throw LocationException(
+        message: 'Failed to get location: ${e.toString()}',
+      );
     }
   }
 
@@ -87,9 +90,11 @@ class LocationService {
         accuracy: LocationAccuracy.high,
         distanceFilter: 10,
       ),
-    ).map((position) => GeoLocation(
-      latitude: position.latitude,
-      longitude: position.longitude,
-    ));
+    ).map(
+      (position) => GeoLocation(
+        latitude: position.latitude,
+        longitude: position.longitude,
+      ),
+    );
   }
 }

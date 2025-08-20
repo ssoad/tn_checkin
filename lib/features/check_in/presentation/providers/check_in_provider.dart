@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:equatable/equatable.dart';
 
-import '../../../../core/providers/providers.dart';
 import '../../../../core/usecases/usecase.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/services/location_service.dart';
@@ -48,13 +47,13 @@ class CheckInState extends Equatable {
 
   @override
   List<Object?> get props => [
-        isLoading,
-        activeCheckInPoint,
-        userCheckIn,
-        error,
-        isWithinRange,
-        userLocation,
-      ];
+    isLoading,
+    activeCheckInPoint,
+    userCheckIn,
+    error,
+    isWithinRange,
+    userLocation,
+  ];
 }
 
 class CheckInNotifier extends StateNotifier<CheckInState> {
@@ -68,11 +67,11 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
     required GetActiveCheckInPoint getActiveCheckInPoint,
     required CheckInUser checkInUser,
     required LocationService locationService,
-  })  : _createCheckInPoint = createCheckInPoint,
-        _getActiveCheckInPoint = getActiveCheckInPoint,
-        _checkInUser = checkInUser,
-        _locationService = locationService,
-        super(const CheckInState());
+  }) : _createCheckInPoint = createCheckInPoint,
+       _getActiveCheckInPoint = getActiveCheckInPoint,
+       _checkInUser = checkInUser,
+       _locationService = locationService,
+       super(const CheckInState());
 
   Future<void> loadActiveCheckInPoint() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -145,10 +144,7 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
         ),
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -196,16 +192,19 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
   }
 }
 
-final checkInProvider = StateNotifierProvider<CheckInNotifier, CheckInState>((ref) {
-  return CheckInNotifier(
-    createCheckInPoint: ref.read(createCheckInPointProvider),
-    getActiveCheckInPoint: ref.read(getActiveCheckInPointProvider),
-    checkInUser: ref.read(checkInUserProvider),
-    locationService: ref.read(locationServiceProvider),
+final checkInProvider = StateNotifierProvider<CheckInNotifier, CheckInState>((
+  ref,
+) {
+  // These will be injected from the core providers
+  throw UnimplementedError(
+    'CheckIn provider should be overridden in main.dart',
   );
 });
 
 // Stream provider for active check-in point
 final activeCheckInPointStreamProvider = StreamProvider<CheckInPoint?>((ref) {
-  return ref.read(checkInRepositoryProvider).activeCheckInPointStream;
+  // This will be injected from the core providers
+  throw UnimplementedError(
+    'ActiveCheckInPointStream provider should be overridden in main.dart',
+  );
 });

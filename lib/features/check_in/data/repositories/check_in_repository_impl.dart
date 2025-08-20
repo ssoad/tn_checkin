@@ -8,7 +8,7 @@ import '../../domain/repositories/check_in_repository.dart';
 import '../datasources/check_in_remote_data_source.dart';
 
 /// Implementation of CheckInRepository using Firebase
-/// 
+///
 /// Simple and focused: just the essential operations we actually need.
 class CheckInRepositoryImpl implements CheckInRepository {
   final CheckInRemoteDataSource remoteDataSource;
@@ -35,7 +35,11 @@ class CheckInRepositoryImpl implements CheckInRepository {
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Failed to create check-in point: ${e.toString()}'));
+      return Left(
+        ServerFailure(
+          message: 'Failed to create check-in point: ${e.toString()}',
+        ),
+      );
     }
   }
 
@@ -47,7 +51,11 @@ class CheckInRepositoryImpl implements CheckInRepository {
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Failed to get active check-in point: ${e.toString()}'));
+      return Left(
+        ServerFailure(
+          message: 'Failed to get active check-in point: ${e.toString()}',
+        ),
+      );
     }
   }
 
@@ -69,7 +77,9 @@ class CheckInRepositoryImpl implements CheckInRepository {
     } on LocationException catch (e) {
       return Left(LocationFailure(message: e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Failed to check in user: ${e.toString()}'));
+      return Left(
+        ServerFailure(message: 'Failed to check in user: ${e.toString()}'),
+      );
     }
   }
 

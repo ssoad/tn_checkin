@@ -8,7 +8,8 @@ class CreateCheckInScreen extends ConsumerStatefulWidget {
   const CreateCheckInScreen({super.key});
 
   @override
-  ConsumerState<CreateCheckInScreen> createState() => _CreateCheckInScreenState();
+  ConsumerState<CreateCheckInScreen> createState() =>
+      _CreateCheckInScreenState();
 }
 
 class _CreateCheckInScreenState extends ConsumerState<CreateCheckInScreen> {
@@ -30,10 +31,7 @@ class _CreateCheckInScreenState extends ConsumerState<CreateCheckInScreen> {
     final checkInState = ref.watch(checkInProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Check-in Point'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Create Check-in Point'), elevation: 0),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -126,7 +124,9 @@ class _CreateCheckInScreenState extends ConsumerState<CreateCheckInScreen> {
                 SizedBox(
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: checkInState.isLoading ? null : _createCheckInPoint,
+                    onPressed: checkInState.isLoading
+                        ? null
+                        : _createCheckInPoint,
                     child: checkInState.isLoading
                         ? const SizedBox(
                             height: 20,
@@ -183,7 +183,9 @@ class _CreateCheckInScreenState extends ConsumerState<CreateCheckInScreen> {
       return;
     }
 
-    await ref.read(checkInProvider.notifier).createCheckInPoint(
+    await ref
+        .read(checkInProvider.notifier)
+        .createCheckInPoint(
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
           createdBy: userId,

@@ -9,6 +9,7 @@ import '../../features/auth/data/repositories/user_repository_impl.dart';
 import '../../features/auth/domain/repositories/user_repository.dart';
 import '../../features/auth/domain/usecases/get_current_user.dart';
 import '../../features/auth/domain/usecases/sign_out.dart';
+import '../../features/auth/domain/usecases/sign_in_with_email_and_password.dart';
 import '../../features/check_in/data/datasources/check_in_remote_data_source.dart';
 import '../../features/check_in/data/repositories/check_in_repository_impl.dart';
 import '../../features/check_in/domain/repositories/check_in_repository.dart';
@@ -41,7 +42,9 @@ final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
   );
 });
 
-final checkInRemoteDataSourceProvider = Provider<CheckInRemoteDataSource>((ref) {
+final checkInRemoteDataSourceProvider = Provider<CheckInRemoteDataSource>((
+  ref,
+) {
   return CheckInRemoteDataSourceImpl(
     firestore: ref.read(firebaseFirestoreProvider),
     uuid: ref.read(uuidProvider),
@@ -69,6 +72,12 @@ final getCurrentUserProvider = Provider<GetCurrentUser>((ref) {
 final signOutProvider = Provider<SignOut>((ref) {
   return SignOut(ref.read(userRepositoryProvider));
 });
+
+final signInWithEmailAndPasswordProvider = Provider<SignInWithEmailAndPassword>(
+  (ref) {
+    return SignInWithEmailAndPassword(ref.read(userRepositoryProvider));
+  },
+);
 
 // Use cases - Check-in
 final createCheckInPointProvider = Provider<CreateCheckInPoint>((ref) {

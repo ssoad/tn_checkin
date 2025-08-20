@@ -5,7 +5,7 @@ import '../entities/check_in_point.dart';
 import '../entities/check_in.dart';
 
 /// Repository interface for check-in operations
-/// 
+///
 /// Super simple: create a check-in point, get it, check users in, and stream updates.
 abstract class CheckInRepository {
   /// Creates a new check-in point
