@@ -9,8 +9,7 @@ import '../models/check_in_model.dart';
 
 /// Firebase data source for check-in operations
 /// 
-/// This handles all the Firestore operations for check-ins and check-in points.
-/// I'm keeping the business logic simple here - just CRUD operations.
+/// Simple and focused - just the operations we actually need.
 abstract class CheckInRemoteDataSource {
   Future<CheckInPointModel> createCheckInPoint({
     required String title,
@@ -21,27 +20,14 @@ abstract class CheckInRemoteDataSource {
   });
 
   Future<CheckInPointModel?> getActiveCheckInPoint();
-  Future<CheckInPointModel> getCheckInPointById(String id);
-  Future<CheckInPointModel> updateCheckInPoint(CheckInPointModel checkInPoint);
-  Future<void> deactivateCheckInPoint(String checkInPointId);
 
   Future<CheckInModel> checkInUser({
     required String userId,
     required String checkInPointId,
     required GeoLocation userLocation,
   });
-
-  Future<CheckInModel> checkOutUser({
-    required String userId,
-    required String checkInPointId,
-    required GeoLocation userLocation,
-  });
-
-  Future<CheckInModel?> getUserCurrentCheckIn(String userId);
-  Future<List<CheckInModel>> getCheckInsForPoint(String checkInPointId);
   
   Stream<CheckInPointModel?> get activeCheckInPointStream;
-  Stream<List<CheckInModel>> getActiveCheckInsStream(String checkInPointId);
 }
 
 class CheckInRemoteDataSourceImpl implements CheckInRemoteDataSource {
@@ -114,54 +100,6 @@ class CheckInRemoteDataSourceImpl implements CheckInRemoteDataSource {
   }
 
   @override
-  Future<CheckInPointModel> getCheckInPointById(String id) async {
-    try {
-      final doc = await _firestore
-          .collection(AppConstants.checkInPointsCollection)
-          .doc(id)
-          .get();
-
-      if (!doc.exists) {
-        throw const ServerException(message: 'Check-in point not found');
-      }
-
-      return CheckInPointModel.fromFirestore(doc.data()!, doc.id);
-    } catch (e) {
-      if (e is ServerException) rethrow;
-      throw ServerException(message: 'Failed to get check-in point: ${e.toString()}');
-    }
-  }
-
-  @override
-  Future<CheckInPointModel> updateCheckInPoint(CheckInPointModel checkInPoint) async {
-    try {
-      await _firestore
-          .collection(AppConstants.checkInPointsCollection)
-          .doc(checkInPoint.id)
-          .update(checkInPoint.toFirestore());
-
-      return checkInPoint;
-    } catch (e) {
-      throw ServerException(message: 'Failed to update check-in point: ${e.toString()}');
-    }
-  }
-
-  @override
-  Future<void> deactivateCheckInPoint(String checkInPointId) async {
-    try {
-      await _firestore
-          .collection(AppConstants.checkInPointsCollection)
-          .doc(checkInPointId)
-          .update({
-        'isActive': false,
-        'checkedInUserIds': [], // Clear all checked-in users
-      });
-    } catch (e) {
-      throw ServerException(message: 'Failed to deactivate check-in point: ${e.toString()}');
-    }
-  }
-
-  @override
   Future<CheckInModel> checkInUser({
     required String userId,
     required String checkInPointId,
@@ -202,85 +140,6 @@ class CheckInRemoteDataSourceImpl implements CheckInRemoteDataSource {
   }
 
   @override
-  Future<CheckInModel> checkOutUser({
-    required String userId,
-    required String checkInPointId,
-    required GeoLocation userLocation,
-  }) async {
-    try {
-      // Find the active check-in record
-      final currentCheckIn = await getUserCurrentCheckIn(userId);
-      if (currentCheckIn == null) {
-        throw const ServerException(message: 'User is not currently checked in');
-      }
-
-      // Update check-in record with checkout info
-      final updatedCheckIn = currentCheckIn.checkOut(
-        checkOutTime: DateTime.now(),
-        checkOutLocation: userLocation,
-      );
-
-      final batch = _firestore.batch();
-
-      // Update check-in record
-      batch.update(
-        _firestore.collection(AppConstants.checkInsCollection).doc(currentCheckIn.id),
-        CheckInModel.fromEntity(updatedCheckIn).toFirestore(),
-      );
-
-      // Remove user from check-in point
-      batch.update(
-        _firestore.collection(AppConstants.checkInPointsCollection).doc(checkInPointId),
-        {
-          'checkedInUserIds': FieldValue.arrayRemove([userId]),
-        },
-      );
-
-      await batch.commit();
-      return CheckInModel.fromEntity(updatedCheckIn);
-    } catch (e) {
-      if (e is ServerException) rethrow;
-      throw ServerException(message: 'Failed to check out user: ${e.toString()}');
-    }
-  }
-
-  @override
-  Future<CheckInModel?> getUserCurrentCheckIn(String userId) async {
-    try {
-      final query = await _firestore
-          .collection(AppConstants.checkInsCollection)
-          .where('userId', isEqualTo: userId)
-          .where('checkOutTime', isNull: true)
-          .limit(1)
-          .get();
-
-      if (query.docs.isEmpty) return null;
-
-      final doc = query.docs.first;
-      return CheckInModel.fromFirestore(doc.data(), doc.id);
-    } catch (e) {
-      throw ServerException(message: 'Failed to get user check-in status: ${e.toString()}');
-    }
-  }
-
-  @override
-  Future<List<CheckInModel>> getCheckInsForPoint(String checkInPointId) async {
-    try {
-      final query = await _firestore
-          .collection(AppConstants.checkInsCollection)
-          .where('checkInPointId', isEqualTo: checkInPointId)
-          .where('checkOutTime', isNull: true) // Only active check-ins
-          .get();
-
-      return query.docs
-          .map((doc) => CheckInModel.fromFirestore(doc.data(), doc.id))
-          .toList();
-    } catch (e) {
-      throw ServerException(message: 'Failed to get check-ins: ${e.toString()}');
-    }
-  }
-
-  @override
   Stream<CheckInPointModel?> get activeCheckInPointStream {
     return _firestore
         .collection(AppConstants.checkInPointsCollection)
@@ -293,17 +152,5 @@ class CheckInRemoteDataSourceImpl implements CheckInRemoteDataSource {
       final doc = snapshot.docs.first;
       return CheckInPointModel.fromFirestore(doc.data(), doc.id);
     });
-  }
-
-  @override
-  Stream<List<CheckInModel>> getActiveCheckInsStream(String checkInPointId) {
-    return _firestore
-        .collection(AppConstants.checkInsCollection)
-        .where('checkInPointId', isEqualTo: checkInPointId)
-        .where('checkOutTime', isNull: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => CheckInModel.fromFirestore(doc.data(), doc.id))
-            .toList());
   }
 }
