@@ -171,6 +171,11 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     CheckInState checkInState,
     ThemeData theme,
   ) {
+    final authState = ref.watch(authProvider);
+    final currentUserId = authState.user?.id;
+    final isUserCheckedIn = currentUserId != null && 
+        checkInPoint.checkedInUserIds.contains(currentUserId);
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -415,18 +420,18 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
 
             const SizedBox(height: 16),
 
-            // Check-in button
+            // Check-in/Check-out button
             FilledButton(
-              onPressed:
-                  (checkInState.isLoading ||
-                      !checkInState.isWithinRange ||
-                      checkInState.userCheckIn != null)
-                  ? null
-                  : _checkIn,
+              onPressed: isUserCheckedIn
+                  ? (checkInState.isLoading ? null : () => _checkOut(currentUserId))
+                  : (checkInState.isLoading ||
+                          !checkInState.isWithinRange)
+                      ? null
+                      : () => _checkIn(currentUserId),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: checkInState.userCheckIn != null
-                    ? Colors.green.shade600
+                backgroundColor: isUserCheckedIn
+                    ? Colors.orange.shade600
                     : null,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -441,18 +446,18 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                         color: theme.colorScheme.onPrimary,
                       ),
                     )
-                  : checkInState.userCheckIn != null
+                  : isUserCheckedIn
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Icon(
-                          Icons.check_circle_rounded,
+                          Icons.logout_rounded,
                           color: Colors.white,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Successfully Checked In',
+                          'Check Out',
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -463,11 +468,16 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.location_on_rounded, size: 20),
+                        Icon(
+                          Icons.location_on_rounded, 
+                          size: 20,
+                          color: Colors.white,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Check In Now',
                           style: theme.textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -513,8 +523,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     );
   }
 
-  Future<void> _checkIn() async {
-    final userId = ref.read(authProvider).user?.id;
+  Future<void> _checkIn(String? userId) async {
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -570,6 +579,73 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
             ],
           ),
           backgroundColor: Colors.green.shade600,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    }
+  }
+
+  Future<void> _checkOut(String? userId) async {
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User not authenticated'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    await ref.read(checkInProvider.notifier).checkOutUser(userId);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Successfully checked out!',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      'Your session has been ended',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange.shade600,
           duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(

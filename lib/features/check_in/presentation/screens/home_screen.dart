@@ -249,6 +249,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildActiveCheckInPoint(BuildContext context, CheckInPoint checkInPoint) {
     final theme = Theme.of(context);
+    final authState = ref.watch(authProvider);
+    final currentUserId = authState.user?.id;
+    final isUserCheckedIn = currentUserId != null && 
+        checkInPoint.checkedInUserIds.contains(currentUserId);
 
     return GestureDetector(
       onTap: () {
@@ -380,55 +384,121 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Row(
               children: [
                 Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const CheckInScreen(),
+                  child: isUserCheckedIn
+                      ? FilledButton.icon(
+                          onPressed: () async {
+                            // Get current user ID from auth state
+                            final authState = ref.read(authProvider);
+                            final userId = authState.user?.id;
+                            if (userId != null) {
+                              await ref.read(checkInProvider.notifier).checkOutUser(userId);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(0.2),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.check_rounded,
+                                            color: Colors.white,
+                                            size: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        const Text(
+                                          'Successfully checked out!',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.orange.shade600,
+                                    duration: const Duration(seconds: 3),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    margin: const EdgeInsets.all(16),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.orange.shade600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(Icons.logout_rounded, size: 20),
+                          label: Text(
+                            'Check Out',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        )
+                      : FilledButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const CheckInScreen(),
+                              ),
+                            );
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.green.shade600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(Icons.location_on_rounded, size: 20),
+                          label: Text(
+                            'Check In Now',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
-                      );
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.green.shade600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                ),
+                if (!isUserCheckedIn) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.green.shade200,
                       ),
                     ),
-                    icon: const Icon(Icons.location_on_rounded, size: 20),
-                    label: Text(
-                      'Check In Now',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const CheckInScreen(),
+                          ),
+                        );
+                      },
+                      icon: Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Colors.green.shade600,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.green.shade200,
-                    ),
-                  ),
-                  child: IconButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const CheckInScreen(),
-                        ),
-                      );
-                    },
-                    icon: Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Colors.green.shade600,
-                    ),
-                  ),
-                ),
+                ],
               ],
             ),
           ],

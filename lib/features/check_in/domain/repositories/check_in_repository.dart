@@ -27,6 +27,13 @@ abstract class CheckInRepository {
     required GeoLocation userLocation,
   });
 
+  /// Checks a user out of the active check-in point
+  Future<Either<Failure, CheckIn>> checkOutUser({
+    required String userId,
+    required String checkInPointId,
+    required GeoLocation checkOutLocation,
+  });
+
   /// Stream of active check-in point changes
   Stream<CheckInPoint?> get activeCheckInPointStream;
 }

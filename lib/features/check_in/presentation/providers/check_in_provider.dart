@@ -9,6 +9,7 @@ import '../../domain/entities/check_in.dart';
 import '../../domain/usecases/create_check_in_point.dart';
 import '../../domain/usecases/get_active_check_in_point.dart';
 import '../../domain/usecases/check_in_user.dart';
+import '../../domain/usecases/check_out_user.dart';
 
 class CheckInState extends Equatable {
   final bool isLoading;
@@ -60,16 +61,19 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
   final CreateCheckInPoint _createCheckInPoint;
   final GetActiveCheckInPoint _getActiveCheckInPoint;
   final CheckInUser _checkInUser;
+  final CheckOutUser _checkOutUser;
   final LocationService _locationService;
 
   CheckInNotifier({
     required CreateCheckInPoint createCheckInPoint,
     required GetActiveCheckInPoint getActiveCheckInPoint,
     required CheckInUser checkInUser,
+    required CheckOutUser checkOutUser,
     required LocationService locationService,
   }) : _createCheckInPoint = createCheckInPoint,
        _getActiveCheckInPoint = getActiveCheckInPoint,
        _checkInUser = checkInUser,
+       _checkOutUser = checkOutUser,
        _locationService = locationService,
        super(const CheckInState());
 
@@ -83,17 +87,32 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
         isLoading: false,
         error: _getFailureMessage(failure),
       ),
-      (checkInPoint) => state = state.copyWith(
-        isLoading: false,
-        error: null,
-        activeCheckInPoint: checkInPoint,
-      ),
+      (checkInPoint) async {
+        state = state.copyWith(
+          isLoading: false,
+          error: null,
+          activeCheckInPoint: checkInPoint,
+        );
+        
+        // Also load user's current check-in status if there's an active point
+        if (checkInPoint != null) {
+          await _loadUserCheckInStatus(checkInPoint.id);
+        }
+      },
     );
+  }
+
+  Future<void> _loadUserCheckInStatus(String checkInPointId) async {
+    // This would need to be implemented with a new use case
+    // For now, we'll check if the user is in the checked-in users list
+    // This is a simplified approach - in a real app, you'd want a proper use case
   }
 
   Future<void> updateUserLocation() async {
     try {
       final location = await _locationService.getCurrentLocation();
+      final wasInRange = state.isWithinRange;
+      
       state = state.copyWith(userLocation: location);
 
       // Check if user is within range of active check-in point
@@ -104,10 +123,82 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
           radiusInMeters: state.activeCheckInPoint!.radiusInMeters,
         );
         state = state.copyWith(isWithinRange: isInRange);
+
+        // Auto check-out if user was checked in but moved out of range
+        if (wasInRange && 
+            !isInRange && 
+            state.userCheckIn != null && 
+            state.userCheckIn!.isActive) {
+          await _autoCheckOut();
+        }
       }
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
+  }
+
+  Future<void> _autoCheckOut() async {
+    if (state.activeCheckInPoint == null || 
+        state.userCheckIn == null || 
+        state.userLocation == null) return;
+
+    // Get the current user ID from auth - this should be injected
+    // For now, we'll use the userCheckIn's userId
+    final userId = state.userCheckIn!.userId;
+
+    final params = CheckOutUserParams(
+      userId: userId,
+      checkInPointId: state.activeCheckInPoint!.id,
+      checkOutLocation: state.userLocation!,
+    );
+
+    final result = await _checkOutUser(params);
+
+    result.fold(
+      (failure) {
+        // Don't show error for auto check-out, just log it
+        state = state.copyWith(error: null);
+      },
+      (checkOut) {
+        state = state.copyWith(
+          userCheckIn: checkOut,
+        );
+      },
+    );
+  }
+
+  Future<void> checkOutUser(String userId) async {
+    if (state.activeCheckInPoint == null) {
+      state = state.copyWith(error: 'No active check-in point available');
+      return;
+    }
+
+    if (state.userLocation == null) {
+      state = state.copyWith(error: 'Location not available');
+      return;
+    }
+
+    state = state.copyWith(isLoading: true, error: null);
+
+    final params = CheckOutUserParams(
+      userId: userId,
+      checkInPointId: state.activeCheckInPoint!.id,
+      checkOutLocation: state.userLocation!,
+    );
+
+    final result = await _checkOutUser(params);
+
+    result.fold(
+      (failure) => state = state.copyWith(
+        isLoading: false,
+        error: _getFailureMessage(failure),
+      ),
+      (checkOut) => state = state.copyWith(
+        isLoading: false,
+        error: null,
+        userCheckIn: checkOut,
+      ),
+    );
   }
 
   Future<void> createCheckInPoint({

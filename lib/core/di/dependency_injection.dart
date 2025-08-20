@@ -24,6 +24,7 @@ List<Override> get providerOverrides => [
       createCheckInPoint: ref.read(createCheckInPointProvider),
       getActiveCheckInPoint: ref.read(getActiveCheckInPointProvider),
       checkInUser: ref.read(checkInUserProvider),
+      checkOutUser: ref.read(checkOutUserProvider),
       locationService: ref.read(locationServiceProvider),
     );
   }),

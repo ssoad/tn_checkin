@@ -27,6 +27,12 @@ abstract class CheckInRemoteDataSource {
     required GeoLocation userLocation,
   });
 
+  Future<CheckInModel> checkOutUser({
+    required String userId,
+    required String checkInPointId,
+    required GeoLocation checkOutLocation,
+  });
+
   Stream<CheckInPointModel?> get activeCheckInPointStream;
 }
 
@@ -143,6 +149,75 @@ class CheckInRemoteDataSourceImpl implements CheckInRemoteDataSource {
     } catch (e) {
       throw ServerException(
         message: 'Failed to check in user: ${e.toString()}',
+      );
+    }
+  }
+
+  @override
+  Future<CheckInModel> checkOutUser({
+    required String userId,
+    required String checkInPointId,
+    required GeoLocation checkOutLocation,
+  }) async {
+    try {
+      // Find the user's active check-in record
+      // Since checkOutTime field might not exist for active check-ins,
+      // we'll query all check-ins and filter in code
+      final checkInQuery = await _firestore
+          .collection(AppConstants.checkInsCollection)
+          .where('userId', isEqualTo: userId)
+          .where('checkInPointId', isEqualTo: checkInPointId)
+          .get();
+
+      // Filter for records without checkOutTime (either null or field doesn't exist)
+      final activeCheckIns = checkInQuery.docs.where((doc) {
+        final data = doc.data();
+        return data['checkOutTime'] == null;
+      }).toList();
+
+      if (activeCheckIns.isEmpty) {
+        throw ServerException(
+          message: 'No active check-in found for user $userId at point $checkInPointId',
+        );
+      }
+
+      final checkInDoc = activeCheckIns.first;
+      final checkIn = CheckInModel.fromFirestore(checkInDoc.data(), checkInDoc.id);
+
+      // Create updated check-in with check-out data
+      final updatedCheckIn = CheckInModel.fromEntity(checkIn.copyWith(
+        checkOutTime: DateTime.now(),
+        checkOutLocation: checkOutLocation,
+      ));
+
+      // Use a batch to ensure atomicity
+      final batch = _firestore.batch();
+
+      // Update check-in record with check-out data
+      batch.update(
+        _firestore.collection(AppConstants.checkInsCollection).doc(checkIn.id),
+        {
+          'checkOutTime': updatedCheckIn.checkOutTime!.millisecondsSinceEpoch,
+          'checkOutLatitude': checkOutLocation.latitude,
+          'checkOutLongitude': checkOutLocation.longitude,
+        },
+      );
+
+      // Remove user from check-in point's checked-in users list
+      batch.update(
+        _firestore
+            .collection(AppConstants.checkInPointsCollection)
+            .doc(checkInPointId),
+        {
+          'checkedInUserIds': FieldValue.arrayRemove([userId]),
+        },
+      );
+
+      await batch.commit();
+      return updatedCheckIn;
+    } catch (e) {
+      throw ServerException(
+        message: 'Failed to check out user: ${e.toString()}',
       );
     }
   }

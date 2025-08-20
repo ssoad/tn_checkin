@@ -84,6 +84,26 @@ class CheckInRepositoryImpl implements CheckInRepository {
   }
 
   @override
+  Future<Either<Failure, CheckIn>> checkOutUser({
+    required String userId,
+    required String checkInPointId,
+    required GeoLocation checkOutLocation,
+  }) async {
+    try {
+      final result = await remoteDataSource.checkOutUser(
+        userId: userId,
+        checkInPointId: checkInPointId,
+        checkOutLocation: checkOutLocation,
+      );
+      return Right(result);
+    } catch (e) {
+      return Left(
+        ServerFailure(message: 'Failed to check out user: ${e.toString()}'),
+      );
+    }
+  }
+
+  @override
   Stream<CheckInPoint?> get activeCheckInPointStream {
     return remoteDataSource.activeCheckInPointStream;
   }

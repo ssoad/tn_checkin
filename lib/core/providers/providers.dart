@@ -15,6 +15,7 @@ import '../../features/check_in/data/datasources/check_in_remote_data_source.dar
 import '../../features/check_in/data/repositories/check_in_repository_impl.dart';
 import '../../features/check_in/domain/repositories/check_in_repository.dart';
 import '../../features/check_in/domain/usecases/check_in_user.dart';
+import '../../features/check_in/domain/usecases/check_out_user.dart';
 import '../../features/check_in/domain/usecases/create_check_in_point.dart';
 import '../../features/check_in/domain/usecases/get_active_check_in_point.dart';
 
@@ -97,4 +98,8 @@ final getActiveCheckInPointProvider = Provider<GetActiveCheckInPoint>((ref) {
 
 final checkInUserProvider = Provider<CheckInUser>((ref) {
   return CheckInUser(ref.read(checkInRepositoryProvider));
+});
+
+final checkOutUserProvider = Provider<CheckOutUser>((ref) {
+  return CheckOutUser(ref.read(checkInRepositoryProvider));
 });
