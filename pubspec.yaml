@@ -23,7 +23,8 @@ dependencies:
   google_maps_flutter: ^2.9.0
   
   # State management & architecture
-  flutter_bloc: ^8.1.6
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
   equatable: ^2.0.5
   dartz: ^0.10.1
   
@@ -36,6 +37,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  riverpod_generator: ^2.4.3
+  build_runner: ^2.4.13
 
 flutter:
   uses-material-design: true
