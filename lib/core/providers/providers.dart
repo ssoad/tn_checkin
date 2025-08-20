@@ -10,6 +10,7 @@ import '../../features/auth/domain/repositories/user_repository.dart';
 import '../../features/auth/domain/usecases/get_current_user.dart';
 import '../../features/auth/domain/usecases/sign_out.dart';
 import '../../features/auth/domain/usecases/sign_in_with_email_and_password.dart';
+import '../../features/auth/domain/usecases/sign_up_with_email_and_password.dart';
 import '../../features/check_in/data/datasources/check_in_remote_data_source.dart';
 import '../../features/check_in/data/repositories/check_in_repository_impl.dart';
 import '../../features/check_in/domain/repositories/check_in_repository.dart';
@@ -76,6 +77,12 @@ final signOutProvider = Provider<SignOut>((ref) {
 final signInWithEmailAndPasswordProvider = Provider<SignInWithEmailAndPassword>(
   (ref) {
     return SignInWithEmailAndPassword(ref.read(userRepositoryProvider));
+  },
+);
+
+final signUpWithEmailAndPasswordProvider = Provider<SignUpWithEmailAndPassword>(
+  (ref) {
+    return SignUpWithEmailAndPassword(ref.read(userRepositoryProvider));
   },
 );
 

@@ -7,6 +7,7 @@ import '../../domain/entities/user.dart';
 import '../../domain/usecases/get_current_user.dart';
 import '../../domain/usecases/sign_out.dart';
 import '../../domain/usecases/sign_in_with_email_and_password.dart';
+import '../../domain/usecases/sign_up_with_email_and_password.dart';
 
 class AuthState extends Equatable {
   final bool isLoading;
@@ -43,14 +44,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final GetCurrentUser _getCurrentUser;
   final SignOut _signOut;
   final SignInWithEmailAndPassword _signInWithEmailAndPassword;
+  final SignUpWithEmailAndPassword _signUpWithEmailAndPassword;
 
   AuthNotifier({
     required GetCurrentUser getCurrentUser,
     required SignOut signOut,
     required SignInWithEmailAndPassword signInWithEmailAndPassword,
+    required SignUpWithEmailAndPassword signUpWithEmailAndPassword,
   }) : _getCurrentUser = getCurrentUser,
        _signOut = signOut,
        _signInWithEmailAndPassword = signInWithEmailAndPassword,
+       _signUpWithEmailAndPassword = signUpWithEmailAndPassword,
        super(const AuthState());
 
   Future<void> checkAuthStatus() async {
@@ -114,6 +118,45 @@ class AuthNotifier extends StateNotifier<AuthState> {
         user: user,
       ),
     );
+  }
+
+  Future<void> signUpWithEmailAndPassword(
+    String email,
+    String password,
+    String name,
+    UserType userType,
+  ) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    final result = await _signUpWithEmailAndPassword(
+      SignUpParams(
+        email: email,
+        password: password,
+        name: name,
+        userType: userType,
+      ),
+    );
+
+    result.fold(
+      (failure) => state = state.copyWith(
+        isLoading: false,
+        error: _getFailureMessage(failure),
+        isAuthenticated: false,
+        user: null,
+      ),
+      (user) => state = state.copyWith(
+        isLoading: false,
+        error: null,
+        isAuthenticated: true,
+        user: user,
+      ),
+    );
+  }
+
+  void clearError() {
+    if (state.error != null) {
+      state = state.copyWith(error: null);
+    }
   }
 
   String _getFailureMessage(Failure failure) {

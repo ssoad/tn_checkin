@@ -14,6 +14,7 @@ List<Override> get providerOverrides => [
       getCurrentUser: ref.read(getCurrentUserProvider),
       signOut: ref.read(signOutProvider),
       signInWithEmailAndPassword: ref.read(signInWithEmailAndPasswordProvider),
+      signUpWithEmailAndPassword: ref.read(signUpWithEmailAndPasswordProvider),
     );
   }),
 
