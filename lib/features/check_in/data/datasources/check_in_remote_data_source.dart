@@ -21,6 +21,8 @@ abstract class CheckInRemoteDataSource {
 
   Future<CheckInPointModel?> getActiveCheckInPoint();
 
+  Future<List<CheckInPointModel>> getAllActiveCheckInPoints();
+
   Future<CheckInModel> checkInUser({
     required String userId,
     required String checkInPointId,
@@ -97,6 +99,25 @@ class CheckInRemoteDataSourceImpl implements CheckInRemoteDataSource {
     } catch (e) {
       throw ServerException(
         message: 'Failed to get active check-in point: ${e.toString()}',
+      );
+    }
+  }
+
+  @override
+  Future<List<CheckInPointModel>> getAllActiveCheckInPoints() async {
+    try {
+      final query = await _firestore
+          .collection(AppConstants.checkInPointsCollection)
+          .where('isActive', isEqualTo: true)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return query.docs
+          .map((doc) => CheckInPointModel.fromFirestore(doc.data(), doc.id))
+          .toList();
+    } catch (e) {
+      throw ServerException(
+        message: 'Failed to get active check-in points: ${e.toString()}',
       );
     }
   }

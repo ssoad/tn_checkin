@@ -9,12 +9,14 @@ import '../../domain/entities/check_in_point.dart';
 import '../../domain/entities/check_in.dart';
 import '../../domain/usecases/create_check_in_point.dart';
 import '../../domain/usecases/get_active_check_in_point.dart';
+import '../../domain/usecases/get_all_active_check_in_points.dart';
 import '../../domain/usecases/check_in_user.dart';
 import '../../domain/usecases/check_out_user.dart';
 
 class CheckInState extends Equatable {
   final bool isLoading;
   final CheckInPoint? activeCheckInPoint;
+  final List<CheckInPoint> allActiveCheckInPoints;
   final CheckIn? userCheckIn;
   final String? error;
   final bool isWithinRange;
@@ -23,6 +25,7 @@ class CheckInState extends Equatable {
   const CheckInState({
     this.isLoading = false,
     this.activeCheckInPoint,
+    this.allActiveCheckInPoints = const [],
     this.userCheckIn,
     this.error,
     this.isWithinRange = false,
@@ -32,6 +35,7 @@ class CheckInState extends Equatable {
   CheckInState copyWith({
     bool? isLoading,
     CheckInPoint? activeCheckInPoint,
+    List<CheckInPoint>? allActiveCheckInPoints,
     CheckIn? userCheckIn,
     String? error,
     bool? isWithinRange,
@@ -40,6 +44,7 @@ class CheckInState extends Equatable {
     return CheckInState(
       isLoading: isLoading ?? this.isLoading,
       activeCheckInPoint: activeCheckInPoint ?? this.activeCheckInPoint,
+      allActiveCheckInPoints: allActiveCheckInPoints ?? this.allActiveCheckInPoints,
       userCheckIn: userCheckIn ?? this.userCheckIn,
       error: error,
       isWithinRange: isWithinRange ?? this.isWithinRange,
@@ -51,6 +56,7 @@ class CheckInState extends Equatable {
   List<Object?> get props => [
     isLoading,
     activeCheckInPoint,
+    allActiveCheckInPoints,
     userCheckIn,
     error,
     isWithinRange,
@@ -61,6 +67,7 @@ class CheckInState extends Equatable {
 class CheckInNotifier extends StateNotifier<CheckInState> {
   final CreateCheckInPoint _createCheckInPoint;
   final GetActiveCheckInPoint _getActiveCheckInPoint;
+  final GetAllActiveCheckInPoints _getAllActiveCheckInPoints;
   final CheckInUser _checkInUser;
   final CheckOutUser _checkOutUser;
   final LocationService _locationService;
@@ -71,11 +78,13 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
   CheckInNotifier({
     required CreateCheckInPoint createCheckInPoint,
     required GetActiveCheckInPoint getActiveCheckInPoint,
+    required GetAllActiveCheckInPoints getAllActiveCheckInPoints,
     required CheckInUser checkInUser,
     required CheckOutUser checkOutUser,
     required LocationService locationService,
   }) : _createCheckInPoint = createCheckInPoint,
        _getActiveCheckInPoint = getActiveCheckInPoint,
+       _getAllActiveCheckInPoints = getAllActiveCheckInPoints,
        _checkInUser = checkInUser,
        _checkOutUser = checkOutUser,
        _locationService = locationService,
@@ -121,6 +130,28 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
     if (state.userCheckIn != null && state.userCheckIn!.isActive) {
       await startLocationMonitoring();
     }
+  }
+
+  Future<void> loadAllActiveCheckInPoints() async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    final result = await _getAllActiveCheckInPoints(const NoParams());
+
+    result.fold(
+      (failure) => state = state.copyWith(
+        isLoading: false,
+        error: _getFailureMessage(failure),
+      ),
+      (checkInPoints) {
+        state = state.copyWith(
+          isLoading: false,
+          error: null,
+          allActiveCheckInPoints: checkInPoints,
+          // If there's at least one check-in point, set it as active
+          activeCheckInPoint: checkInPoints.isNotEmpty ? checkInPoints.first : null,
+        );
+      },
+    );
   }
 
   Future<void> updateUserLocation() async {

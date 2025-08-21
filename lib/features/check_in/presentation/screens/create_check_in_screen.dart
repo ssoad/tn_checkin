@@ -382,9 +382,6 @@ class _CreateCheckInScreenState extends ConsumerState<CreateCheckInScreen> {
                                   if (radius == null || radius <= 0) {
                                     return 'Please enter a valid radius';
                                   }
-                                  if (radius > 1000) {
-                                    return 'Radius cannot be more than 1000 meters';
-                                  }
                                   return null;
                                 },
                               ),

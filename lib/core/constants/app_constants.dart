@@ -12,8 +12,7 @@ class AppConstants {
   
   // Default values
   static const double defaultRadius = 50.0; // meters
-  static const double maxRadius = 500.0; // meters
-  static const double minRadius = 10.0; // meters
+  static const double minRadius = 10.0; // meters (minimum for accuracy)
   
   // Location update intervals
   static const int locationUpdateIntervalSeconds = 5;

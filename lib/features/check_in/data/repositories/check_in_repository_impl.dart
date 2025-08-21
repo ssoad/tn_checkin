@@ -60,6 +60,22 @@ class CheckInRepositoryImpl implements CheckInRepository {
   }
 
   @override
+  Future<Either<Failure, List<CheckInPoint>>> getAllActiveCheckInPoints() async {
+    try {
+      final checkInPointModels = await remoteDataSource.getAllActiveCheckInPoints();
+      return Right(checkInPointModels);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(
+        ServerFailure(
+          message: 'Failed to get active check-in points: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  @override
   Future<Either<Failure, CheckIn>> checkInUser({
     required String userId,
     required String checkInPointId,

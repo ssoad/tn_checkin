@@ -20,6 +20,9 @@ abstract class CheckInRepository {
   /// Gets the currently active check-in point
   Future<Either<Failure, CheckInPoint?>> getActiveCheckInPoint();
 
+  /// Gets all active check-in points
+  Future<Either<Failure, List<CheckInPoint>>> getAllActiveCheckInPoints();
+
   /// Checks a user into the active check-in point
   Future<Either<Failure, CheckIn>> checkInUser({
     required String userId,

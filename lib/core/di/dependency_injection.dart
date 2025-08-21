@@ -23,6 +23,7 @@ List<Override> get providerOverrides => [
     return CheckInNotifier(
       createCheckInPoint: ref.read(createCheckInPointProvider),
       getActiveCheckInPoint: ref.read(getActiveCheckInPointProvider),
+      getAllActiveCheckInPoints: ref.read(getAllActiveCheckInPointsProvider),
       checkInUser: ref.read(checkInUserProvider),
       checkOutUser: ref.read(checkOutUserProvider),
       locationService: ref.read(locationServiceProvider),

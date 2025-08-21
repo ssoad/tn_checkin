@@ -18,6 +18,7 @@ import '../../features/check_in/domain/usecases/check_in_user.dart';
 import '../../features/check_in/domain/usecases/check_out_user.dart';
 import '../../features/check_in/domain/usecases/create_check_in_point.dart';
 import '../../features/check_in/domain/usecases/get_active_check_in_point.dart';
+import '../../features/check_in/domain/usecases/get_all_active_check_in_points.dart';
 
 // External dependencies
 final firebaseFirestoreProvider = Provider<FirebaseFirestore>((ref) {
@@ -94,6 +95,10 @@ final createCheckInPointProvider = Provider<CreateCheckInPoint>((ref) {
 
 final getActiveCheckInPointProvider = Provider<GetActiveCheckInPoint>((ref) {
   return GetActiveCheckInPoint(ref.read(checkInRepositoryProvider));
+});
+
+final getAllActiveCheckInPointsProvider = Provider<GetAllActiveCheckInPoints>((ref) {
+  return GetAllActiveCheckInPoints(ref.read(checkInRepositoryProvider));
 });
 
 final checkInUserProvider = Provider<CheckInUser>((ref) {

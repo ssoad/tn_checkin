@@ -18,16 +18,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Load active check-in point when screen loads
+    // Load all active check-in points when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(checkInProvider.notifier).loadActiveCheckInPoint();
+      ref.read(checkInProvider.notifier).loadAllActiveCheckInPoints();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final checkInState = ref.watch(checkInProvider);
-    final activeCheckInPointAsync = ref.watch(activeCheckInPointStreamProvider);
     final authState = ref.watch(authProvider);
     final theme = Theme.of(context);
 
@@ -152,61 +151,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ],
                   ),
                 )
+              else if (checkInState.allActiveCheckInPoints.isNotEmpty)
+                _buildMultipleCheckInPoints(context, checkInState.allActiveCheckInPoints)
               else
-                activeCheckInPointAsync.when(
-                  data: (activeCheckInPoint) {
-                    if (activeCheckInPoint != null) {
-                      return _buildActiveCheckInPoint(context, activeCheckInPoint);
-                    } else {
-                      return _buildNoActiveCheckInPoint(context);
-                    }
-                  },
-                  loading: () => Center(
-                    child: Column(
-                      children: [
-                        CircularProgressIndicator(
-                          strokeWidth: 3,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Loading check-in point...',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  error: (error, stackTrace) => Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.errorContainer.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: theme.colorScheme.error.withOpacity(0.3),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.error_outline_rounded,
-                          color: theme.colorScheme.error,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Error loading check-in point: ${error.toString()}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onErrorContainer,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                _buildNoActiveCheckInPoint(context),
 
               const SizedBox(height: 24),
 
@@ -260,7 +208,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildActiveCheckInPoint(BuildContext context, CheckInPoint checkInPoint) {
+  Widget _buildMultipleCheckInPoints(BuildContext context, List<CheckInPoint> checkInPoints) {
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: checkInPoints.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final checkInPoint = checkInPoints[index];
+        return _buildCheckInPointCard(context, checkInPoint);
+      },
+    );
+  }
+
+  Widget _buildCheckInPointCard(BuildContext context, CheckInPoint checkInPoint) {
     final theme = Theme.of(context);
     final authState = ref.watch(authProvider);
     final currentUserId = authState.user?.id;
