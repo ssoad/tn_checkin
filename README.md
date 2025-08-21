@@ -1,5 +1,15 @@
 # TN Check-In 📍
 
+## 🔗 GitHub Repository
+
+**Repository**: [https://github.com/ssoad/tn_checkin](https://github.com/ssoad/tn_checkin)
+
+## 📱 Download APK
+
+The latest Android APK is available in the [`dist/`](./dist/) folder:
+
+- **[tn-checkin-v1.0.0.apk](./dist/tn-checkin-v1.0.0.apk)** (51.4MB)
+
 ## The Challenge
 
 It's often tough to know who is physically present at a certain place, whether it's for a team meeting, a social event, or a class. Relying on people to manually check in can be slow and unreliable.
