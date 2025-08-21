@@ -244,6 +244,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const CreateCheckInScreen(),
+            ),
+          );
+        },
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
+        icon: const Icon(Icons.add_location_alt_rounded),
+        label: const Text('Add Location'),
+      ),
     );
   }
 
@@ -367,7 +380,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Row(
               children: [
                 Icon(
-                  Icons.radio_button_checked_rounded,
+                  Icons.my_location_rounded,
                   color: Colors.green.shade600,
                   size: 18,
                 ),
@@ -535,7 +548,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           const SizedBox(height: 20),
           Text(
-            'No Active Check-in Point',
+            'No Check-in Locations Yet',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w600,
               color: theme.colorScheme.onSurface,
@@ -543,7 +556,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Create a new check-in point to get started\nand manage your attendance',
+            'Tap "Add Location" to create your first\ncheck-in point and get started',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -567,9 +580,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            icon: const Icon(Icons.add_rounded, size: 20),
+            icon: const Icon(Icons.add_location_alt_rounded, size: 20),
             label: Text(
-              'Create Check-in Point',
+              'Create Your First Location',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),

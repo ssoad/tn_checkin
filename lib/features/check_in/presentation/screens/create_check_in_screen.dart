@@ -351,7 +351,7 @@ class _CreateCheckInScreenState extends ConsumerState<CreateCheckInScreen> {
                                   hintText: 'Enter radius in meters',
                                   suffixText: 'meters',
                                   prefixIcon: Icon(
-                                    Icons.radio_button_checked_rounded,
+                                    Icons.my_location_rounded,
                                     color: theme.colorScheme.primary,
                                   ),
                                   border: OutlineInputBorder(

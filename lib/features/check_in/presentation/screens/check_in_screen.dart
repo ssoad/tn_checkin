@@ -258,7 +258,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                     child: Row(
                       children: [
                         Icon(
-                          Icons.radio_button_checked_rounded,
+                          Icons.my_location_rounded,
                           color: theme.colorScheme.primary,
                           size: 20,
                         ),

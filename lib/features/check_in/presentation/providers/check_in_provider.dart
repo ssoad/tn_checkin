@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:equatable/equatable.dart';
+import 'dart:async';
 
 import '../../../../core/usecases/usecase.dart';
 import '../../../../core/errors/failures.dart';
@@ -63,6 +64,9 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
   final CheckInUser _checkInUser;
   final CheckOutUser _checkOutUser;
   final LocationService _locationService;
+  
+  StreamSubscription<GeoLocation>? _locationSubscription;
+  bool _isLocationMonitoringActive = false;
 
   CheckInNotifier({
     required CreateCheckInPoint createCheckInPoint,
@@ -76,6 +80,12 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
        _checkOutUser = checkOutUser,
        _locationService = locationService,
        super(const CheckInState());
+
+  @override
+  void dispose() {
+    _stopLocationMonitoring();
+    super.dispose();
+  }
 
   Future<void> loadActiveCheckInPoint() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -106,6 +116,11 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
     // This would need to be implemented with a new use case
     // For now, we'll check if the user is in the checked-in users list
     // This is a simplified approach - in a real app, you'd want a proper use case
+    
+    // If user has an active check-in, start location monitoring
+    if (state.userCheckIn != null && state.userCheckIn!.isActive) {
+      await startLocationMonitoring();
+    }
   }
 
   Future<void> updateUserLocation() async {
@@ -140,7 +155,9 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
   Future<void> _autoCheckOut() async {
     if (state.activeCheckInPoint == null || 
         state.userCheckIn == null || 
-        state.userLocation == null) return;
+        state.userLocation == null) {
+      return;
+    }
 
     // Get the current user ID from auth - this should be injected
     // For now, we'll use the userCheckIn's userId
@@ -163,6 +180,8 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
         state = state.copyWith(
           userCheckIn: checkOut,
         );
+        // Stop location monitoring after auto checkout
+        _stopLocationMonitoring();
       },
     );
   }
@@ -193,11 +212,15 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
         isLoading: false,
         error: _getFailureMessage(failure),
       ),
-      (checkOut) => state = state.copyWith(
-        isLoading: false,
-        error: null,
-        userCheckIn: checkOut,
-      ),
+      (checkOut) {
+        state = state.copyWith(
+          isLoading: false,
+          error: null,
+          userCheckIn: checkOut,
+        );
+        // Stop location monitoring after checkout
+        _stopLocationMonitoring();
+      },
     );
   }
 
@@ -301,12 +324,78 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
         isLoading: false,
         error: _getFailureMessage(failure),
       ),
-      (checkIn) => state = state.copyWith(
-        isLoading: false,
-        error: null,
-        userCheckIn: checkIn,
-      ),
+      (checkIn) {
+        state = state.copyWith(
+          isLoading: false,
+          error: null,
+          userCheckIn: checkIn,
+        );
+        // Start location monitoring after successful check-in
+        startLocationMonitoring();
+      },
     );
+  }
+
+  /// Start real-time location monitoring for auto checkout
+  Future<void> startLocationMonitoring() async {
+    if (_isLocationMonitoringActive) return;
+
+    try {
+      // Check if we have location permission first
+      if (!await _locationService.hasLocationPermission()) {
+        final granted = await _locationService.requestLocationPermission();
+        if (!granted) return;
+      }
+
+      _isLocationMonitoringActive = true;
+      
+      // Listen to location changes
+      _locationSubscription = _locationService.locationStream.listen(
+        (newLocation) async {
+          await _onLocationChanged(newLocation);
+        },
+        onError: (error) {
+          // Handle location stream errors gracefully
+          _isLocationMonitoringActive = false;
+        },
+      );
+    } catch (e) {
+      _isLocationMonitoringActive = false;
+    }
+  }
+
+  /// Stop location monitoring
+  void _stopLocationMonitoring() {
+    _locationSubscription?.cancel();
+    _locationSubscription = null;
+    _isLocationMonitoringActive = false;
+  }
+
+  /// Handle location changes and trigger auto checkout if needed
+  Future<void> _onLocationChanged(GeoLocation newLocation) async {
+    final wasInRange = state.isWithinRange;
+    
+    // Update state with new location
+    state = state.copyWith(userLocation: newLocation);
+
+    // Check if user is within range of active check-in point
+    if (state.activeCheckInPoint != null) {
+      final isInRange = _locationService.isWithinCheckInRadius(
+        userLocation: newLocation,
+        checkInPointLocation: state.activeCheckInPoint!.location,
+        radiusInMeters: state.activeCheckInPoint!.radiusInMeters,
+      );
+      
+      state = state.copyWith(isWithinRange: isInRange);
+
+      // Auto check-out if user was checked in but moved out of range
+      if (wasInRange && 
+          !isInRange && 
+          state.userCheckIn != null && 
+          state.userCheckIn!.isActive) {
+        await _autoCheckOut();
+      }
+    }
   }
 
   String _getFailureMessage(Failure failure) {
