@@ -55,14 +55,6 @@ class CheckInRemoteDataSourceImpl implements CheckInRemoteDataSource {
     required String createdBy,
   }) async {
     try {
-      // First, check if there's already an active check-in point
-      final existingActive = await getActiveCheckInPoint();
-      if (existingActive != null) {
-        throw const ServerException(
-          message: 'Only one check-in point can be active at a time',
-        );
-      }
-
       final checkInPoint = CheckInPointModel(
         id: _uuid.v4(),
         title: title,

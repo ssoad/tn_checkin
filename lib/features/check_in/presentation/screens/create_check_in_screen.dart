@@ -516,7 +516,9 @@ class _CreateCheckInScreenState extends ConsumerState<CreateCheckInScreen> {
           location: selectedGeoLocation,
         );
 
-    if (mounted && ref.read(checkInProvider).activeCheckInPoint != null) {
+    // Check if creation was successful (no error and active check-in point exists)
+    final checkInState = ref.read(checkInProvider);
+    if (mounted && checkInState.error == null && checkInState.activeCheckInPoint != null) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

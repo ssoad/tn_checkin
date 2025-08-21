@@ -5,16 +5,41 @@ import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/screens/auth_screen.dart';
 import '../../features/check_in/presentation/screens/home_screen.dart';
 
-class AppRouter extends ConsumerWidget {
+class AppRouter extends ConsumerStatefulWidget {
   const AppRouter({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppRouter> createState() => _AppRouterState();
+}
+
+class _AppRouterState extends ConsumerState<AppRouter> {
+  @override
+  void initState() {
+    super.initState();
+    // Check authentication status when app starts
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authProvider.notifier).checkAuthStatus();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
     // Show loading while checking auth status
     if (authState.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Checking authentication...'),
+            ],
+          ),
+        ),
+      );
     }
 
     // Navigate based on auth status
