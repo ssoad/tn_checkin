@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/auth_provider.dart';
 import 'sign_up_screen.dart';
+import '../../../../core/common/widgets/widgets.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -78,13 +79,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     const SizedBox(height: 32),
 
                     // Email field
-                    TextFormField(
+                    CommonTextField(
                       controller: _emailController,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.email_outlined),
-                      ),
+                      labelText: 'Email',
+                      hintText: 'Enter your email',
+                      prefixIcon: const Icon(Icons.email_outlined),
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -99,14 +98,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     const SizedBox(height: 16),
 
                     // Password field
-                    TextFormField(
+                    CommonPasswordField(
                       controller: _passwordController,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.lock_outline),
-                      ),
-                      obscureText: true,
+                      labelText: 'Password',
+                      hintText: 'Enter your password',
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your password';
@@ -120,19 +115,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     const SizedBox(height: 24),
 
                     // Sign In Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: authState.isLoading ? null : _signIn,
-                        child: authState.isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Text('Sign In'),
-                      ),
+                    CommonButton.filled(
+                      text: 'Sign In',
+                      onPressed: authState.isLoading ? null : _signIn,
+                      isLoading: authState.isLoading,
+                      fullWidth: true,
                     ),
 
                     const SizedBox(height: 16),
@@ -170,7 +157,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           "Don't have an account? ",
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
-                        TextButton(
+                        CommonButton.text(
+                          text: 'Sign Up',
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -179,7 +167,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               ),
                             );
                           },
-                          child: const Text('Sign Up'),
                         ),
                       ],
                     ),

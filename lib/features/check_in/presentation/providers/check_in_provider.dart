@@ -23,7 +23,7 @@ class CheckInState extends Equatable {
   final GeoLocation? userLocation;
 
   const CheckInState({
-    this.isLoading = false,
+    this.isLoading = true, // Start with loading true to prevent flash of empty state
     this.activeCheckInPoint,
     this.allActiveCheckInPoints = const [],
     this.userCheckIn,
@@ -213,6 +213,8 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
         );
         // Stop location monitoring after auto checkout
         _stopLocationMonitoring();
+        // Refresh the check-in points to update user counts in real-time
+        loadAllActiveCheckInPoints();
       },
     );
   }
@@ -251,6 +253,8 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
         );
         // Stop location monitoring after checkout
         _stopLocationMonitoring();
+        // Refresh the check-in points to update user counts in real-time
+        loadAllActiveCheckInPoints();
       },
     );
   }
@@ -318,11 +322,15 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
           isLoading: false,
           error: _getFailureMessage(failure),
         ),
-        (checkInPoint) => state = state.copyWith(
-          isLoading: false,
-          error: null,
-          activeCheckInPoint: checkInPoint,
-        ),
+        (checkInPoint) {
+          state = state.copyWith(
+            isLoading: false,
+            error: null,
+            activeCheckInPoint: checkInPoint,
+          );
+          // Refresh the check-in points list to include the new location
+          loadAllActiveCheckInPoints();
+        },
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -340,11 +348,20 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
       return;
     }
 
+    await checkInUserToPoint(userId, state.activeCheckInPoint!.id);
+  }
+
+  Future<void> checkInUserToPoint(String userId, String checkInPointId) async {
+    if (state.userLocation == null) {
+      state = state.copyWith(error: 'Location not available');
+      return;
+    }
+
     state = state.copyWith(isLoading: true, error: null);
 
     final params = CheckInUserParams(
       userId: userId,
-      checkInPointId: state.activeCheckInPoint!.id,
+      checkInPointId: checkInPointId,
       userLocation: state.userLocation!,
     );
 
@@ -363,6 +380,8 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
         );
         // Start location monitoring after successful check-in
         startLocationMonitoring();
+        // Refresh the check-in points to update user counts in real-time
+        loadAllActiveCheckInPoints();
       },
     );
   }

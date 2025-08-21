@@ -3,9 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/check_in_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../domain/entities/check_in_point.dart';
+import '../../../../core/services/global_location_service.dart';
+import '../../../../core/common/widgets/widgets.dart';
 
 class CheckInScreen extends ConsumerStatefulWidget {
-  const CheckInScreen({super.key});
+  final CheckInPoint? checkInPoint;
+  
+  const CheckInScreen({
+    super.key,
+    this.checkInPoint,
+  });
 
   @override
   ConsumerState<CheckInScreen> createState() => _CheckInScreenState();
@@ -15,10 +23,30 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   @override
   void initState() {
     super.initState();
-    // Update user location when screen loads
+    // Trigger location refresh for global location service
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(checkInProvider.notifier).updateUserLocation();
+      ref.read(globalLocationProvider.notifier).refreshLocation();
     });
+  }
+
+  // Helper method to check if user is within range of a specific check-in point
+  bool _isWithinRangeOfPoint(CheckInPoint checkInPoint, CheckInState checkInState) {
+    final globalLocationState = ref.read(globalLocationProvider);
+    if (globalLocationState.currentLocation == null) {
+      // If location is not available, we can't determine range
+      return false;
+    }
+    
+    return ref.read(globalLocationProvider.notifier).isWithinRangeOf(
+      checkInPointLocation: checkInPoint.location,
+      radiusInMeters: checkInPoint.radiusInMeters,
+    );
+  }
+
+  // Helper method to determine if location is available
+  bool _isLocationAvailable(CheckInState checkInState) {
+    final globalLocationState = ref.read(globalLocationProvider);
+    return globalLocationState.currentLocation != null && globalLocationState.hasPermission;
   }
 
   @override
@@ -26,6 +54,26 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     final checkInState = ref.watch(checkInProvider);
     final activeCheckInPointAsync = ref.watch(activeCheckInPointStreamProvider);
     final theme = Theme.of(context);
+    
+    // Use the passed checkInPoint if provided, otherwise use the stream
+    if (widget.checkInPoint != null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Check In',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: theme.colorScheme.surface,
+          foregroundColor: theme.colorScheme.onSurface,
+        ),
+        body: _buildCheckInBody(context, widget.checkInPoint!, checkInState, theme),
+      );
+    }
 
     return activeCheckInPointAsync.when(
       data: (checkInPoint) {
@@ -175,6 +223,10 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     final currentUserId = authState.user?.id;
     final isUserCheckedIn = currentUserId != null && 
         checkInPoint.checkedInUserIds.contains(currentUserId);
+    
+    // Calculate range specifically for this check-in point
+    final isWithinRange = _isWithinRangeOfPoint(checkInPoint, checkInState);
+    final isLocationAvailable = _isLocationAvailable(checkInState);
 
     return SafeArea(
       child: Padding(
@@ -317,22 +369,28 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: checkInState.isWithinRange
-                    ? Colors.green.shade50
-                    : Colors.orange.shade50,
+                color: !isLocationAvailable
+                    ? Colors.grey.shade50
+                    : isWithinRange
+                        ? Colors.green.shade50
+                        : Colors.orange.shade50,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: checkInState.isWithinRange
-                      ? Colors.green.shade200
-                      : Colors.orange.shade200,
+                  color: !isLocationAvailable
+                      ? Colors.grey.shade200
+                      : isWithinRange
+                          ? Colors.green.shade200
+                          : Colors.orange.shade200,
                   width: 2,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color:
-                        (checkInState.isWithinRange
-                                ? Colors.green
-                                : Colors.orange)
+                        (!isLocationAvailable
+                                ? Colors.grey
+                                : isWithinRange
+                                    ? Colors.green
+                                    : Colors.orange)
                             .withOpacity(0.1),
                     blurRadius: 15,
                     offset: const Offset(0, 4),
@@ -345,43 +403,57 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color:
-                          (checkInState.isWithinRange
-                                  ? Colors.green
-                                  : Colors.orange)
+                          (!isLocationAvailable
+                                  ? Colors.grey
+                                  : isWithinRange
+                                      ? Colors.green
+                                      : Colors.orange)
                               .withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      checkInState.isWithinRange
-                          ? Icons.check_circle_rounded
-                          : Icons.location_searching_rounded,
+                      !isLocationAvailable
+                          ? Icons.location_disabled_rounded
+                          : isWithinRange
+                              ? Icons.check_circle_rounded
+                              : Icons.location_searching_rounded,
                       size: 48,
-                      color: checkInState.isWithinRange
-                          ? Colors.green.shade600
-                          : Colors.orange.shade600,
+                      color: !isLocationAvailable
+                          ? Colors.grey.shade600
+                          : isWithinRange
+                              ? Colors.green.shade600
+                              : Colors.orange.shade600,
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    checkInState.isWithinRange
-                        ? 'You\'re in range!'
-                        : 'Move closer to check in',
+                    !isLocationAvailable
+                        ? 'Location unavailable'
+                        : isWithinRange
+                            ? 'You\'re in range!'
+                            : 'Move closer to check in',
                     style: theme.textTheme.titleLarge?.copyWith(
-                      color: checkInState.isWithinRange
-                          ? Colors.green.shade700
-                          : Colors.orange.shade700,
+                      color: !isLocationAvailable
+                          ? Colors.grey.shade700
+                          : isWithinRange
+                              ? Colors.green.shade700
+                              : Colors.orange.shade700,
                       fontWeight: FontWeight.w600,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    checkInState.isWithinRange
-                        ? 'You can now check in to this location'
-                        : 'You need to be within ${checkInPoint.radiusInMeters.toInt()}m to check in',
+                    !isLocationAvailable
+                        ? 'Tap "Refresh Location" to update your position'
+                        : isWithinRange
+                            ? 'You can now check in to this location'
+                            : 'You need to be within ${checkInPoint.radiusInMeters.toInt()}m to check in',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: checkInState.isWithinRange
-                          ? Colors.green.shade600
+                      color: !isLocationAvailable
+                          ? Colors.grey.shade600
+                          : isWithinRange
+                              ? Colors.green.shade600
                           : Colors.orange.shade600,
                     ),
                     textAlign: TextAlign.center,
@@ -393,29 +465,17 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
             const SizedBox(height: 24),
 
             // Refresh location button
-            OutlinedButton.icon(
+            CommonButton.outlined(
+              text: 'Refresh Location',
+              icon: Icon(
+                Icons.refresh_rounded,
+                size: 18,
+              ),
               onPressed: checkInState.isLoading
                   ? null
                   : () =>
                         ref.read(checkInProvider.notifier).updateUserLocation(),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              icon: Icon(
-                Icons.refresh_rounded,
-                size: 20,
-                color: theme.colorScheme.primary,
-              ),
-              label: Text(
-                'Refresh Location',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              fullWidth: true,
             ),
 
             const SizedBox(height: 16),
@@ -425,7 +485,8 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
               onPressed: isUserCheckedIn
                   ? (checkInState.isLoading ? null : () => _checkOut(currentUserId))
                   : (checkInState.isLoading ||
-                          !checkInState.isWithinRange)
+                          !isLocationAvailable ||
+                          !isWithinRange)
                       ? null
                       : () => _checkIn(currentUserId),
               style: FilledButton.styleFrom(
@@ -534,7 +595,12 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
       return;
     }
 
-    await ref.read(checkInProvider.notifier).checkInUser(userId);
+    // Use the specific check-in point if provided, otherwise use the default method
+    if (widget.checkInPoint != null) {
+      await ref.read(checkInProvider.notifier).checkInUserToPoint(userId, widget.checkInPoint!.id);
+    } else {
+      await ref.read(checkInProvider.notifier).checkInUser(userId);
+    }
 
     if (mounted && ref.read(checkInProvider).userCheckIn != null) {
       ScaffoldMessenger.of(context).showSnackBar(

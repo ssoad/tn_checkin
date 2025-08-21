@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/check_in_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/domain/entities/user.dart';
 import '../../domain/entities/check_in_point.dart';
 import 'create_check_in_screen.dart';
 import 'check_in_screen.dart';
+import '../../../../core/services/global_location_service.dart';
+import '../../../../core/common/widgets/widgets.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -28,6 +31,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final checkInState = ref.watch(checkInProvider);
     final authState = ref.watch(authProvider);
+    final globalLocationState = ref.watch(globalLocationProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -108,18 +112,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Welcome back!',
+                                authState.user?.name != null 
+                                    ? 'Welcome back, ${authState.user!.name}!'
+                                    : 'Welcome back!',
                                 style: theme.textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: theme.colorScheme.onPrimaryContainer,
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                'User: ${authState.user?.userType.name ?? 'Guest'}',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
-                                ),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primary.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      authState.user?.userType.displayName ?? 'Guest',
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.primary,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                  if (authState.user?.email != null) ...[
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        authState.user!.email,
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.onPrimaryContainer.withOpacity(0.7),
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                           ),
@@ -143,7 +174,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Loading...',
+                        'Loading check-in locations...',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -169,21 +200,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: theme.colorScheme.error.withOpacity(0.3),
                     ),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(
-                        Icons.error_outline_rounded,
-                        color: theme.colorScheme.error,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          checkInState.error!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onErrorContainer,
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            color: theme.colorScheme.error,
+                            size: 20,
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              checkInState.error!,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onErrorContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      CommonButton.text(
+                        text: 'Retry',
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                        onPressed: () {
+                          ref.read(checkInProvider.notifier).loadAllActiveCheckInPoints();
+                        },
+                        foregroundColor: theme.colorScheme.error,
                       ),
                     ],
                   ),
@@ -224,15 +269,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildCheckInPointCard(BuildContext context, CheckInPoint checkInPoint) {
     final theme = Theme.of(context);
     final authState = ref.watch(authProvider);
+    final globalLocationState = ref.watch(globalLocationProvider);
     final currentUserId = authState.user?.id;
     final isUserCheckedIn = currentUserId != null && 
         checkInPoint.checkedInUserIds.contains(currentUserId);
+
+    // Check if user is within range of this specific location
+    final isWithinRange = globalLocationState.currentLocation != null &&
+        ref.read(globalLocationProvider.notifier).isWithinRangeOf(
+          checkInPointLocation: checkInPoint.location,
+          radiusInMeters: checkInPoint.radiusInMeters,
+        );
+
+    // Determine card colors based on location status
+    Color primaryColor;
+    Color backgroundColor;
+    Color borderColor;
+    Color shadowColor;
+    String statusText;
+    IconData statusIcon;
+
+    if (!globalLocationState.hasPermission || globalLocationState.currentLocation == null) {
+      // Location not available
+      primaryColor = Colors.grey.shade600;
+      backgroundColor = Colors.grey.shade50;
+      borderColor = Colors.grey.shade200;
+      shadowColor = Colors.grey;
+      statusText = 'Location unavailable';
+      statusIcon = Icons.location_disabled_rounded;
+    } else if (isWithinRange) {
+      // Within range - Green theme
+      primaryColor = Colors.green.shade600;
+      backgroundColor = Colors.green.shade50;
+      borderColor = Colors.green.shade200;
+      shadowColor = Colors.green;
+      statusText = 'In range - Ready to check in!';
+      statusIcon = Icons.check_circle_rounded;
+    } else {
+      // Out of range - Orange theme
+      primaryColor = Colors.orange.shade600;
+      backgroundColor = Colors.orange.shade50;
+      borderColor = Colors.orange.shade200;
+      shadowColor = Colors.orange;
+      statusText = 'Out of range';
+      statusIcon = Icons.location_searching_rounded;
+    }
 
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => const CheckInScreen(),
+            builder: (context) => CheckInScreen(checkInPoint: checkInPoint),
           ),
         );
       },
@@ -241,20 +328,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Colors.green.shade50,
-              Colors.green.shade100.withOpacity(0.5),
+              backgroundColor,
+              backgroundColor.withOpacity(0.5),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.green.shade200,
-            width: 1,
+            color: borderColor,
+            width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.green.withOpacity(0.1),
+              color: shadowColor.withOpacity(0.1),
               blurRadius: 15,
               offset: const Offset(0, 4),
             ),
@@ -272,21 +359,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade600,
+                    color: primaryColor,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.circle,
+                        statusIcon,
                         color: Colors.white,
-                        size: 8,
+                        size: 12,
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'ACTIVE',
-                        style: TextStyle(
+                        statusText.toUpperCase(),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -334,26 +421,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               checkInPoint.title,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.green.shade800,
+                color: primaryColor,
               ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(
-                  Icons.my_location_rounded,
-                  color: Colors.green.shade600,
-                  size: 18,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Radius: ${checkInPoint.radiusInMeters.toInt()}m',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.green.shade700,
+            // Show radius only for creator users
+            if (authState.user?.userType == UserType.creator) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.my_location_rounded,
+                    color: primaryColor,
+                    size: 18,
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Radius: ${checkInPoint.radiusInMeters.toInt()}m',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 20),
             Row(
               children: [
@@ -426,21 +516,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           onPressed: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => const CheckInScreen(),
+                                builder: (context) => CheckInScreen(checkInPoint: checkInPoint),
                               ),
                             );
                           },
                           style: FilledButton.styleFrom(
-                            backgroundColor: Colors.green.shade600,
+                            backgroundColor: primaryColor,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          icon: const Icon(Icons.location_on_rounded, size: 20),
+                          icon: Icon(statusIcon, size: 20),
                           label: Text(
-                            'Check In Now',
+                            isWithinRange ? 'Check In Now' : 'Out of Range',
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
@@ -455,20 +545,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.green.shade200,
+                        color: borderColor,
                       ),
                     ),
                     child: IconButton(
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => const CheckInScreen(),
+                            builder: (context) => CheckInScreen(checkInPoint: checkInPoint),
                           ),
                         );
                       },
                       icon: Icon(
                         Icons.arrow_forward_rounded,
-                        color: Colors.green.shade600,
+                        color: primaryColor,
                       ),
                     ),
                   ),
