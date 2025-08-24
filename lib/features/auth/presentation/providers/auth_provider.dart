@@ -63,12 +63,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final result = await _getCurrentUser(const NoParams());
 
     result.fold(
-      (failure) => state = state.copyWith(
-        isLoading: false,
-        error: _getFailureMessage(failure),
-        isAuthenticated: false,
-        user: null,
-      ),
+      (failure) {
+        // Don't show error for "no user signed in" case - this is normal for first-time users
+        if (failure is AuthFailure && 
+            (failure.message.toLowerCase().contains('no user is currently signed in') ||
+             failure.message.toLowerCase().contains('user not found'))) {
+          state = state.copyWith(
+            isLoading: false,
+            error: null, // Clear error for no user case
+            isAuthenticated: false,
+            user: null,
+          );
+        } else {
+          // Only show actual errors (network issues, etc.)
+          state = state.copyWith(
+            isLoading: false,
+            error: _getFailureMessage(failure),
+            isAuthenticated: false,
+            user: null,
+          );
+        }
+      },
       (user) => state = state.copyWith(
         isLoading: false,
         error: null,
