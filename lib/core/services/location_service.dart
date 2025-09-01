@@ -70,19 +70,6 @@ class LocationService {
     return distance <= radiusInMeters;
   }
 
-  /// Calculate distance between two locations in meters
-  double calculateDistance({
-    required GeoLocation from,
-    required GeoLocation to,
-  }) {
-    return Geolocator.distanceBetween(
-      from.latitude,
-      from.longitude,
-      to.latitude,
-      to.longitude,
-    );
-  }
-
   /// Get location stream for real-time tracking (if needed)
   Stream<GeoLocation> get locationStream {
     return Geolocator.getPositionStream(
